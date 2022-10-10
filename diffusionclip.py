@@ -56,6 +56,18 @@ class DiffusionCLIP(object):
             self.src_txts = SRC_TRG_TXT_DIC[self.args.edit_attr][0]
             self.trg_txts = SRC_TRG_TXT_DIC[self.args.edit_attr][1]
 
+    def set_img2img_direction(self, clip_loss_func, target_images):
+        if self.args.style_img_dir is None:
+            return
+
+        valid_exts=[".png", ".jpg", ".jpeg"]
+        file_list = [os.path.join(dir_path, file_name) for file_name in os.listdir(self.args.style_img_dir) 
+                 if os.path.splitext(file_name)[1].lower() in valid_exts]
+
+        with torch.no_grad():
+            direction = clip_loss_func.compute_img2img_direction(target_images, file_list)
+            clip_loss_func.target_direction = direction
+
     def clip_finetune(self):
         print(self.args.exp)
         print(f'   {self.src_txts}')
@@ -69,7 +81,7 @@ class DiffusionCLIP(object):
                 url = "https://image-editing-test-12345.s3-us-west-2.amazonaws.com/checkpoints/church_outdoor.ckpt"
         elif self.config.data.dataset == "CelebA_HQ":
             url = "https://image-editing-test-12345.s3-us-west-2.amazonaws.com/checkpoints/celeba_hq.ckpt"
-        elif self.config.data.dataset == "AFHQ":
+        elif self.config.data.dataset == "AFHQ" or self.config.data.dataset == "IMAGENET":
             pass
         else:
             raise ValueError
@@ -82,7 +94,7 @@ class DiffusionCLIP(object):
                 init_ckpt = torch.hub.load_state_dict_from_url(url, map_location=self.device)
             learn_sigma = False
             print("Original diffusion Model loaded.")
-        elif self.config.data.dataset in ["FFHQ", "AFHQ"]:
+        elif self.config.data.dataset in ["FFHQ", "AFHQ", "IMAGENET"]:
             model = i_DDPM(self.config.data.dataset)
             if self.args.model_path:
                 init_ckpt = torch.load(self.args.model_path)
@@ -214,6 +226,7 @@ class DiffusionCLIP(object):
             optim_ft.load_state_dict(init_opt_ckpt)
             scheduler_ft.load_state_dict(init_sch_ckpt)
             clip_loss_func.target_direction = None
+            self.set_img2img_direction(clip_loss_func, torch.cat([img for img, _, _ in img_lat_pairs_dic['train']]))
 
             # ----------- Train -----------#
             for it_out in range(self.args.n_iter):

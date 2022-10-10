@@ -36,6 +36,7 @@ def parse_args_and_config():
     parser.add_argument('--src_txts', type=str, action='append', help='Source text e.g. Face')
     parser.add_argument('--trg_txts', type=str, action='append', help='Target text e.g. Angry Face')
     parser.add_argument('--target_class_num', type=str, default=None)
+    parser.add_argument('--style_img_dir', type=str, default=None, help="Path to a directory containing images (png, jpg or jpeg) with a specific style to mimic")
 
     # Sampling
     parser.add_argument('--t_0', type=int, default=400, help='Return step in [0, 1000)')
