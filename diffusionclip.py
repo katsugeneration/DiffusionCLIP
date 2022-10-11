@@ -56,7 +56,7 @@ class DiffusionCLIP(object):
             self.src_txts = SRC_TRG_TXT_DIC[self.args.edit_attr][0]
             self.trg_txts = SRC_TRG_TXT_DIC[self.args.edit_attr][1]
 
-    def set_img2img_direction(self, clip_loss_func, target_images):
+    def set_img2img_direction(self, clip_loss_func, src_class):
         if self.args.style_img_dir is None:
             return
 
@@ -65,7 +65,7 @@ class DiffusionCLIP(object):
                  if os.path.splitext(file_name)[1].lower() in valid_exts]
 
         with torch.no_grad():
-            direction = clip_loss_func.compute_img2img_direction(target_images, file_list)
+            direction = clip_loss_func.compute_txt2img_direction(src_class, file_list)
             clip_loss_func.target_direction = direction
 
     def clip_finetune(self):
@@ -226,7 +226,7 @@ class DiffusionCLIP(object):
             optim_ft.load_state_dict(init_opt_ckpt)
             scheduler_ft.load_state_dict(init_sch_ckpt)
             clip_loss_func.target_direction = None
-            self.set_img2img_direction(clip_loss_func, torch.cat([img for img, _, _ in img_lat_pairs_dic['train']]))
+            self.set_img2img_direction(clip_loss_func, src_txt)
 
             # ----------- Train -----------#
             for it_out in range(self.args.n_iter):
@@ -512,7 +512,7 @@ class DiffusionCLIP(object):
             optim_ft.load_state_dict(init_opt_ckpt)
             scheduler_ft.load_state_dict(init_sch_ckpt)
             clip_loss_func.target_direction = None
-            self.set_img2img_direction(clip_loss_func, torch.cat([img for img, _, _ in img_lat_pairs_dic['train']]))
+            self.set_img2img_direction(clip_loss_func, src_txt)
 
             # ----------- Train -----------#
             for it_out in range(self.args.n_iter):
