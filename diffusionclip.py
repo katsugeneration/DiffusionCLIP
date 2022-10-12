@@ -65,7 +65,7 @@ class DiffusionCLIP(object):
                  if os.path.splitext(file_name)[1].lower() in valid_exts]
 
         with torch.no_grad():
-            direction = clip_loss_func.compute_txt2img_direction(src_class, file_list)
+            direction = clip_loss_func.compute_txt2txt_and_img_direction(src_class, target_class, file_list)
             clip_loss_func.target_direction = direction
 
     def clip_finetune(self):
@@ -226,7 +226,7 @@ class DiffusionCLIP(object):
             optim_ft.load_state_dict(init_opt_ckpt)
             scheduler_ft.load_state_dict(init_sch_ckpt)
             clip_loss_func.target_direction = None
-            self.set_img2img_direction(clip_loss_func, src_txt)
+            self.set_img2img_direction(clip_loss_func, src_txt, trg_txt)
 
             # ----------- Train -----------#
             for it_out in range(self.args.n_iter):
@@ -512,7 +512,7 @@ class DiffusionCLIP(object):
             optim_ft.load_state_dict(init_opt_ckpt)
             scheduler_ft.load_state_dict(init_sch_ckpt)
             clip_loss_func.target_direction = None
-            self.set_img2img_direction(clip_loss_func, src_txt)
+            self.set_img2img_direction(clip_loss_func, src_txt, trg_txt)
 
             # ----------- Train -----------#
             for it_out in range(self.args.n_iter):

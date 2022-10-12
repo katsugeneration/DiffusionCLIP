@@ -159,6 +159,30 @@ class CLIPLoss(torch.nn.Module):
 
         return direction
 
+    def compute_txt2txt_and_img_direction(self, source_class: str, target_class: str, target_images: list) -> torch.Tensor:
+        with torch.no_grad():
+            src_encoding = self.get_text_features(source_class)
+            src_encoding = src_encoding.mean(dim=0, keepdim=True)
+            target_class_encoding = self.get_text_features(target_class)
+            target_class_encoding = target_class_encoding.mean(dim=0, keepdim=True)
+
+            target_encodings = []
+            for target_img in target_images:
+                preprocessed = self.clip_preprocess(Image.open(target_img)).unsqueeze(0).to(self.device)
+                encoding = self.model.encode_image(preprocessed)
+                target_encodings.append(encoding)
+            
+            target_encoding = torch.cat(target_encodings, axis=0)
+            target_encoding /= target_encoding.norm(dim=-1, keepdim=True)
+            target_encoding = target_encoding.mean(dim=0, keepdim=True)
+            target_encoding += target_class_encoding
+            target_encoding /= target_encoding.norm(dim=-1, keepdim=True)
+
+            direction = target_encoding - src_encoding
+            direction /= direction.norm(dim=-1, keepdim=True)
+
+        return direction
+
     def set_text_features(self, source_class: str, target_class: str) -> None:
         source_features = self.get_text_features(source_class).mean(axis=0, keepdim=True)
         self.src_text_features = source_features / source_features.norm(dim=-1, keepdim=True)
